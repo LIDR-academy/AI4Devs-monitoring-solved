@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "prisma": {
+    "schema": "backend/prisma/schema.prisma"
+  },
+  "devDependencies": {
+    "@types/cypress": "^1.1.3",
+    "@types/node": "^20.14.2",
+    "cypress": "^13.11.0",
+    "typescript": "^5.4.5"
+  }
+}
