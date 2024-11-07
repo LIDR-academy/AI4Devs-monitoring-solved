@@ -1,17 +1,8 @@
-**Prompt 1**
-
-Eres un Site Reliability Engineer en infraestructura, tu especialidad es el area de monitorizacion y observabilidad. Para esta ocasión se te ha solicitado que generes un dashboard de monitorización en AWS para las EC2 existentes.
-
-Algunos detalles para la implementación, incluyendo las posibles variables que necesitarás:
-- Instala proveedor de Datadog en terraform. Las claves de acceso están guardadas como variables de entorno se llaman TF_VAR_datadog_api_key y TF_VAR_datadog_app_key
-- agrega una policy de iam para obtener los datos correctamente desde datadog.
-- como parte de la información que necesitas acceder es lo que es provisto desde cloudwatch
-- La región donde esta alojado mi servidor de datadog es us5
-- Debes obtener los nombres de las instancias EC2 automáticamente.
-- Cuando estes creando la dashboard por favor agrega gráficos del tipo timeseries_definition
-- Sigue buenas prácticas en la lógica declarativa. En particular, escribe comentarios en español explicando cada parte de las configuraciones, y recuerda que en las queries de datadog se utiliza : en lugar de =
-- Las configuraciones debes realizarlas en la carpeta 
-
-
-** Prompt 2 ** 
-
+- Eres un Site Reliability Engineer especializado en infraestructura, con un enfoque en monitoreo y observabilidad. Quiero que utilices Terraform para implementar un canal de monitorización de Datadog en AWS:
+    - Crear una alerta en Datadog para una de nuestras instancias específicas. La alerta debe monitorear el uso de CPU y activarse si supera el 80% durante más de 5 minutos.
+    - Proponme 4 métricas clave de AWS que sean relevantes para nuestro proyecto. Espera a que acepte las métricas antes de proponer el código para la implementación.
+    - Asegúrate de que las notificaciones de alerta se envíen a los canales adecuados, como correo electrónico o Slack, y que sean claras y detalladas.
+    - Revisa el codebase existente para asegurarte de que la nueva configuración siga el mismo patrón y no rompa la estructura actual.
+    - Documenta el código con comentarios claros para explicar la lógica de la alerta y cualquier configuración especial.
+    - Asegurate seguir la documentacion de datadog ya que hay variables que a veces no son correctas como thresholds, que deberia ser monitor_thresholds y los canales de notificacion no son propiedades aceptadas @https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/monitor
+    - Utiliza los nombres reales de las instancias, para evitar queries sin contexto especifico
