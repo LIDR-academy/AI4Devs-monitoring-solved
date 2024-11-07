@@ -99,3 +99,30 @@ resource "datadog_dashboard" "ec2_dashboard" {
     }
   }
 }
+
+
+
+# Crear una alerta en Datadog para el uso de CPU
+resource "datadog_monitor" "cpu_usage_alert" {
+  name               = "High CPU Utilization Alert"
+  type               = "metric alert"
+  message            = "La utilización de CPU ha superado el 80% durante más de 5 minutos. Por favor, revisa la instancia."
+  escalation_message = "La alerta de CPU sigue activa. Se requiere atención inmediata."
+
+  query = "avg(last_5m):avg:aws.ec2.cpuutilization{instance_id in (${join(",", data.aws_instances.all.ids)})} > 80"
+
+  # Configuración de notificaciones
+  notify_no_data = false
+  notify_audit   = false
+  timeout_h      = 0
+
+  # Configurar los umbrales del monitor
+  monitor_thresholds {
+    critical = 80
+  }
+
+  tags = [
+    "environment:production",
+    "team:operations"
+  ]
+}
