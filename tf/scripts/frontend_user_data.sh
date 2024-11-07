@@ -8,6 +8,8 @@ export DD_SITE="datadoghq.com" bash -c "$(curl -L https://s3.amazonaws.com/dd-ag
 # Iniciar el servicio de Docker
 service docker start
 
+
+sudo rm -rf /home/ec2-user/frontend
 # Descargar y descomprimir el archivo frontend.zip desde S3
 aws s3 cp s3://lti-project-code-bucket/frontend.zip /home/ec2-user/frontend.zip
 unzip /home/ec2-user/frontend.zip -d /home/ec2-user/
