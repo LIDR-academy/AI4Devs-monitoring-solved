@@ -212,3 +212,81 @@ resource "datadog_monitor" "cpu_usage_alert" {
     "team:operations"
   ]
 }
+
+# Crear una alerta en Datadog para una instancia EC2 específica
+resource "datadog_monitor" "specific_instance_alert" {
+  name               = "Alerta de Instancia EC2 Específica"
+  type               = "metric alert"
+  message            = "La instancia EC2 específica ha superado los umbrales definidos. Por favor, revisa la instancia."
+  escalation_message = "La alerta sigue activa. Se requiere atención inmediata."
+
+  # Consulta para monitorear la utilización de CPU
+  query = "avg(last_5m):avg:aws.ec2.cpuutilization{instance_id in (${join(",", data.aws_instances.all.ids)})} > 80"
+
+  # Configuración de notificaciones
+  notify_no_data = false
+  notify_audit   = false
+  timeout_h      = 0
+
+  # Configurar los umbrales del monitor
+  monitor_thresholds {
+    critical = 80
+  }
+
+  tags = [
+    "environment:production",
+    "team:operations"
+  ]
+}
+
+# Repetir la configuración de alerta para otras métricas clave
+resource "datadog_monitor" "network_in_alert" {
+  name    = "Alerta de Network In para Instancia EC2 Específica"
+  type    = "metric alert"
+  message = "El tráfico de entrada de la instancia EC2 específica ha superado los umbrales definidos."
+
+  query = "avg(last_5m):avg:aws.ec2.network_in{instance_id in (${join(",", data.aws_instances.all.ids)})} > 1000000" # Ajusta el umbral según sea necesario
+
+  monitor_thresholds {
+    critical = 1000000
+  }
+
+  tags = [
+    "environment:production",
+    "team:operations"
+  ]
+}
+
+resource "datadog_monitor" "disk_io_alert" {
+  name    = "Alerta de Operaciones de Disco para Instancia EC2 Específica"
+  type    = "metric alert"
+  message = "Las operaciones de disco de la instancia EC2 específica han superado los umbrales definidos."
+
+  query = "avg(last_5m):avg:aws.ec2.diskio{instance_id in (${join(",", data.aws_instances.all.ids)})} > 1000" # Ajusta el umbral según sea necesario
+
+  monitor_thresholds {
+    critical = 1000
+  }
+
+  tags = [
+    "environment:production",
+    "team:operations"
+  ]
+}
+
+resource "datadog_monitor" "status_check_failed_alert" {
+  name    = "Alerta de Estado Fallido para Instancia EC2 Específica"
+  type    = "metric alert"
+  message = "La instancia EC2 específica ha fallado en los chequeos de estado."
+
+  query = "avg(last_5m):avg:aws.ec2.status_check_failed{instance_id in (${join(",", data.aws_instances.all.ids)})} > 0"
+
+  monitor_thresholds {
+    critical = 0
+  }
+
+  tags = [
+    "environment:production",
+    "team:operations"
+  ]
+}
