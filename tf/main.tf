@@ -43,7 +43,7 @@ resource "aws_iam_policy" "datadog_policy" {
       {
         "Effect": "Allow",
         "Action": [
-"apigateway:GET",
+                "apigateway:GET",
                 "autoscaling:Describe*",
                 "backup:List*",
                 "backup:ListRecoveryPointsByBackupVault",
@@ -198,15 +198,18 @@ resource "datadog_monitor" "cpu_usage_alert" {
   type               = "metric alert"
   message            = "La utilización de CPU ha superado el 80% durante más de 5 minutos. Por favor, revisa la instancia."
   escalation_message = "La alerta de CPU sigue activa. Se requiere atención inmediata."
-  query = "avg(last_5m):avg:aws.ec2.cpuutilization{instance_id in (${join(",", data.aws_instances.all.ids)})} > 80"
-  # Configuración de notificaciones
+  
+  # Modified query syntax
+  query = "avg(last_5m):avg:aws.ec2.cpuutilization{*} by {instance_id} > 80"
+  
   notify_no_data = false
   notify_audit   = false
   timeout_h      = 0
-  # Configurar los umbrales del monitor
+  
   monitor_thresholds {
     critical = 80
   }
+  
   tags = [
     "environment:production",
     "team:operations"
@@ -220,15 +223,12 @@ resource "datadog_monitor" "specific_instance_alert" {
   message            = "La instancia EC2 específica ha superado los umbrales definidos. Por favor, revisa la instancia."
   escalation_message = "La alerta sigue activa. Se requiere atención inmediata."
 
-  # Consulta para monitorear la utilización de CPU
-  query = "avg(last_5m):avg:aws.ec2.cpuutilization{instance_id in (${join(",", data.aws_instances.all.ids)})} > 80"
+  query = "avg(last_5m):avg:aws.ec2.cpuutilization{*} by {instance_id} > 80"
 
-  # Configuración de notificaciones
   notify_no_data = false
   notify_audit   = false
   timeout_h      = 0
 
-  # Configurar los umbrales del monitor
   monitor_thresholds {
     critical = 80
   }
@@ -245,7 +245,7 @@ resource "datadog_monitor" "network_in_alert" {
   type    = "metric alert"
   message = "El tráfico de entrada de la instancia EC2 específica ha superado los umbrales definidos."
 
-  query = "avg(last_5m):avg:aws.ec2.network_in{instance_id in (${join(",", data.aws_instances.all.ids)})} > 1000000" # Ajusta el umbral según sea necesario
+  query = "avg(last_5m):avg:aws.ec2.network_in{*} by {instance_id} > 1000000"
 
   monitor_thresholds {
     critical = 1000000
@@ -262,7 +262,7 @@ resource "datadog_monitor" "disk_io_alert" {
   type    = "metric alert"
   message = "Las operaciones de disco de la instancia EC2 específica han superado los umbrales definidos."
 
-  query = "avg(last_5m):avg:aws.ec2.diskio{instance_id in (${join(",", data.aws_instances.all.ids)})} > 1000" # Ajusta el umbral según sea necesario
+  query = "avg(last_5m):avg:aws.ec2.diskreadops{*} by {instance_id} > 1000"
 
   monitor_thresholds {
     critical = 1000
@@ -279,7 +279,7 @@ resource "datadog_monitor" "status_check_failed_alert" {
   type    = "metric alert"
   message = "La instancia EC2 específica ha fallado en los chequeos de estado."
 
-  query = "avg(last_5m):avg:aws.ec2.status_check_failed{instance_id in (${join(",", data.aws_instances.all.ids)})} > 0"
+  query = "avg(last_5m):avg:aws.ec2.status_check_failed{*} by {instance_id} > 0"
 
   monitor_thresholds {
     critical = 0

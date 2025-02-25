@@ -1,7 +1,7 @@
 #!/bin/bash
 export DD_AGENT_MAJOR_VERSION=7 
 export DD_API_KEY='76cd5e07d41cec7b205a01ffbc26c5ae'
-export DD_SITE="datadoghq.com" bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script.sh)"
+export DD_SITE="us5.datadoghq.com" bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script.sh)"
 
 yum update -y
 yum install -y docker
@@ -10,7 +10,7 @@ yum install -y docker
 sudo service docker start
 rm -rf /home/ec2-user/backend
 # Descargar y descomprimir el archivo backend.zip desde S3
-aws s3 cp s3://lti-project-code-bucket/backend.zip /home/ec2-user/backend.zip
+aws s3 cp s3://bucket-lti-project-code/backend.zip /home/ec2-user/backend.zip
 unzip /home/ec2-user/backend.zip -d /home/ec2-user/
 
 # Construir la imagen Docker para el backend
