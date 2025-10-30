@@ -1,3 +1,612 @@
+# EN
+# **LTI Project Good Practice Guide EN**
+
+## **1. Domain-Driven Design (DDD)**
+
+**Domain-Driven Design (DDD)** is a methodology that focuses on modeling software based on business logic and the domain. By centering development on a deep understanding of the domain, DDD facilitates the creation of complex systems.
+**Advantages:**
+
+- **Improves communication:** Promotes a common language between developers and domain experts, improving communication and reducing interpretation errors.
+- **Clear domain models:** Helps build models that accurately reflect business rules and processes.
+- **High maintainability:** By dividing the system into subdomains, it facilitates software maintenance and evolution.
+
+**Key Components:**
+
+- **Entities:** Objects with a distinctive identity.
+    
+    *Before*
+    
+    ```tsx
+    // Anteriormente, los datos del candidato podrían haber sido manejados como un simple objeto JSON sin métodos.
+    const candidate = {
+        id: 1,
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john.doe@example.com'
+    };
+    ```
+    
+    *After*
+    
+    ```tsx
+    export class Candidate {
+        id?: number;
+        firstName: string;
+        lastName: string;
+        email: string;
+        // Constructor y métodos que encapsulan la lógica de negocio.
+        constructor(data: any) {
+            this.id = data.id;
+            this.firstName = data.firstName;
+            this.lastName = data.lastName;
+            this.email = data.email;
+        }
+    }
+    ```
+    
+    <aside>
+    💡 **Explanation**: `Candidate` is an entity because it has a unique identifier (**id**) that distinguishes it from other candidates, even if other properties are identical.
+    
+    </aside>
+    
+- **Value Objects:** Objects that describe aspects of the domain without conceptual identity.
+    
+    *Before*
+    
+    ```tsx
+     // Manejo de información de educación como un simple objeto.
+    const education = {
+        institution: 'University',
+        degree: 'Bachelor',
+        startDate: '2010-01-01',
+        endDate: '2014-01-01'
+    };
+    ```
+    
+    *After*
+    
+    ```tsx
+    export class Education {
+        institution: string;
+        title: string;
+        startDate: Date;
+        endDate?: Date;
+        constructor(data: any) {
+            this.institution = data.institution;
+            this.title = data.title;
+            this.startDate = new Date(data.startDate);
+            this.endDate = data.endDate ? new Date(data.endDate) : undefined;
+        }
+    }
+    ```
+    
+    <aside>
+    💡 **Explanation**: `Education` can be considered a **Value Object** in some contexts, as it describes a candidate's education without needing a unique identifier to define it. However, in this model, it has been assigned an id, which might contradict the pure definition of a Value Object in DDD.
+    
+    **Clarification and Correct Use of Value Objects**
+    
+    Currently, some classes such as `Education` and `WorkExperience` have unique identifiers, which classifies them as entities. However, in many cases, these could be treated as Value Objects within the context of a Candidate.
+    
+    **Proposed Improvement:**
+    
+    -Remove unique identifiers from classes that should be Value Objects. This involves changing the way these classes are handled in the database, possibly by incorporating them as part of the Candidate documents if using a NoSQL database, or by keeping them in separate tables but not treating them as separate entities in the domain.
+    </aside>
+    
+    *Improved version*
+    
+    ```tsx
+    
+    ```
+    
+- **Added:** Sets of objects that should be treated as a unit.
+    
+    *Before*
+    
+    ```tsx
+     // Datos del candidato y su educación manejados por separado.
+    const candidate = { id: 1, name: 'John Doe' };
+    const educations = [{ candidateId: 1, institution: 'University' }];
+    ```
+    
+    *After*
+    
+    ```tsx
+    export class Candidate {
+        id?: number;
+        firstName: string;
+        lastName: string;
+        email: string;
+        educations: Education[];
+        constructor(data: any) {
+            this.id = data.id;
+            this.firstName = data.firstName;
+            this.lastName = data.lastName;
+            this.email = data.email;
+            this.educations = data.educations.map(edu => new Education(edu));
+        }
+    }
+    ```
+    
+    <aside>
+    💡 **Explanation**: `Candidate` acts as an aggregate containing `Education`, `WorkExperience`, `Resume`, and `Application`. `Candidate` is the root of the aggregate, since the other entities only make sense in relation to a candidate.
+    
+    **Recommendation:** Aggregates must be carefully designed to ensure that all operations within the aggregate boundary maintain consistency.
+    
+   **Proposed Improvement:**
+    
+    - Review and possibly limit operations that modify objects within the `Candidate` aggregate. For example, operations affecting `Education` and `WorkExperience` should be handled through the aggregate root, `Candidate`, to maintain integrity and encapsulation.
+
+    </aside>
+    
+    *Improved version*
+    
+    ```tsx
+    
+    ```
+    
+- **Repositories:** Interfaces that provide access to aggregates and entities.
+    
+    *Before*
+    
+    ```tsx
+    // Acceso directo a la base de datos sin abstracción.
+    function getCandidateById(id) {
+        return database.query('SELECT * FROM candidates WHERE id = ?', [id]);
+    }
+    ```
+    
+    Explanation:
+    
+    *After*
+    
+    ```tsx
+    export class CandidateRepository {
+        async findById(id: number): Promise<Candidate | null> {
+            const data = await prisma.candidate.findUnique({ where: { id } });
+            return data ? new Candidate(data) : null;
+        }
+    }
+    ```
+    
+    <aside>
+    💡 **Explanation**: `CandidateRepository` provides a clear interface for accessing candidate data, encapsulating the database access logic.
+    
+    **Recommendation:** The repositories are partially implemented but could be extended to fully encapsulate all data access operations related to their entities.
+    
+    **Proposed Improvement:**
+    
+    - Develop comprehensive repository interfaces for each entity and aggregate, ensuring that all database interactions for those entities go through the repository. This could include methods for creating, updating, deleting, and searching for entities.
+    - Implement repository methods that handle collections of entities, such as Candidate lists, that can be filtered or modified in bulk.
+    </aside>
+    
+- **Domain Services:** Business logic that does not naturally belong to an entity or value.
+    
+    *Before*
+    
+    ```tsx
+    // Funciones sueltas para manejar la lógica de negocio.
+    function calculateAge(candidate) {
+        const today = new Date();
+        const birthDate = new Date(candidate.birthDate);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age;
+    }
+    ```
+    
+    *After*
+    
+    ```tsx
+    export class CandidateService {
+      static calculateAge(candidate: Candidate): number {
+          const today = new Date();
+          const birthDate = new Date(candidate.birthDate);
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const m = today.getMonth() - birthDate.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+              age--;
+          }
+          return age;
+      }
+    }
+    ```
+    
+    <aside>
+    💡 **Explanation**: `CandidateService` encapsulates candidate-related business logic, such as calculating age, providing a centralized and consistent point for handling these operations.
+    
+    </aside>
+    
+- **Other recommendations**
+    
+    **Using Factories**
+    
+    Factories are useful in DDD for encapsulating complex object creation logic, ensuring that all created objects comply with domain rules from the moment they are created.
+    
+    <aside>
+    💡 **Proposed Improvement:** Implement factories for the creation of entities and aggregates, especially those that are complex and require a specific initial configuration that complies with business rules.
+    
+    </aside>
+    
+    **Improved Relationship Modeling**
+    
+    Relationships between entities and aggregates must be clear and consistent with business rules.
+    
+    <aside>
+    💡 **Proposed Enhancement:** Review and possibly redesign entity relationships to ensure they accurately reflect the domain's needs and rules. This may include removing unnecessary relationships or adding new ones that facilitate business operations.
+    
+    </aside>
+    
+    **Domain Event Integration**
+    
+    Domain events are an important part of DDD and can be used to handle side effects of domain operations in a decoupled manner.
+    
+    <aside>
+    💡 **Proposed Enhancement:** Implement a domain event system that allows entities and aggregates to publish events that other system components can handle without being tightly coupled to the entities that generate them.
+    
+    </aside>
+    
+
+## **2. SOLID and DRY principles**
+
+**SOLID**
+
+The SOLID principles are five object-oriented design principles that help create more understandable, flexible, and maintainable systems.
+
+- **S - Single Responsibility Principle (SRP):** Each class should have a single responsibility or reason for changing.
+    
+    *Before*
+    
+    ```tsx
+    // Un método que maneja múltiples responsabilidades: validación y almacenamiento de datos.
+    function processCandidate(candidate) {
+        if (!candidate.email.includes('@')) {
+            console.error('Email inválido');
+            return;
+        }
+        database.save(candidate);
+        console.log('Candidato guardado');
+    }
+    ```
+    
+    *After*
+    
+    ```tsx
+    export class Candidate {
+      // La clase ahora solo se encarga de la lógica relacionada con el candidato.
+      validateEmail() {
+          if (!this.email.includes('@')) {
+              throw new Error('Email inválido');
+          }
+      }
+    
+      save() {
+          this.validateEmail();
+          prisma.candidate.create(this);
+      }
+    }
+    ```
+    
+    <aside>
+    💡 **Explanation**: The `Candidate` class now has separate methods for validating the email and saving the information, complying with the single responsibility principle.
+    
+   **Observation:**
+    
+    The Candidate class in `backend/src/domain/models/Candidate.ts` handles both the business logic and data access logic.
+    
+    **Recommendation:**
+    
+    Separate data access logic into a repository layer to adhere more closely to SRP.
+    
+    </aside>
+    
+    *Improvement Example:*
+    
+    Create a `CandidateRepository` class for database interactions.
+    
+    ```
+    class CandidateRepository {
+        async save(candidateData: any) {
+            // Database interaction logic here
+        }
+    }
+    ```
+    
+- **O - Open/Closed Principle (OCP):** Software entities should be open for extension, but closed for modification.
+    
+    *Before*
+    
+    ```tsx
+    // Modificación directa de la clase para añadir funcionalidad.
+    class Candidate {
+        saveToDatabase() {
+            // código para guardar en la base de datos
+        }
+        // Para añadir nueva funcionalidad, modificamos la clase directamente.
+        sendEmail() {
+            // código para enviar un email
+        }
+    }
+    ```
+    
+    *After*
+    
+    ```tsx
+    export class Candidate {
+      saveToDatabase() {
+          // código para guardar en la base de datos
+      }
+    }
+    // Extendemos la funcionalidad sin modificar la clase existente.
+    class CandidateWithEmail extends Candidate {
+      sendEmail() {
+          // código para enviar un email
+      }
+    }
+    ```
+    
+    <aside>
+    💡 **Explanation**: The functionality of sending an email is extended in a subclass, keeping the original class closed to modification but open to extensions.
+    
+    **Observation:**
+    
+    The `addCandidate` function in `backend/src/application/services/candidateService.ts` directly instantiates `Candidate`, `Education`, `WorkExperience`, and `Resume` classes.
+    
+    **Recommendation:**
+    
+    Use factory methods to create instances, allowing for easier extension without modifying existing code.
+    
+    </aside>
+    
+    *Improvement Example:*
+    
+    Implement a factory method for creating a Candidate.
+    
+    ```tsx
+    class CandidateFactory {
+        static createCandidate(data: any): Candidate {
+            return new Candidate(data);
+        }
+    }
+    ```
+    
+- **L - Liskov Substitution Principle (LSP):** Objects of a derived class must be replaceable by objects of the base class without altering the operation of the program.
+    
+    *Before*
+    
+    ```tsx
+    // Subclase que no puede reemplazar completamente a su clase base.
+    class TemporaryCandidate extends Candidate {
+        saveToDatabase() {
+            throw new Error("Temporary candidates can't be saved.");
+        }
+    }
+    ```
+    
+    *After*
+    
+    ```tsx
+    class TemporaryCandidate extends Candidate {
+      saveToDatabase() {
+          // Implementación adecuada que permite guardar o manejar temporalmente.
+          console.log("Handled temporarily");
+      }
+    }
+    ```
+    
+    <aside>
+    💡 **Explanation**: `TemporaryCandidate` now provides a proper implementation that respects the base class contract, allowing for error-free overriding.
+    
+    **Observation:**
+    
+    Currently, there is no inheritance in use where LSP could be violated. The project uses composition over inheritance, which generally supports LSP.
+    
+    **Recommendation:**
+    
+    Continue using composition to avoid LSP violations and ensure that any future inheritance structures allow derived classes to substitute their base classes without altering how the program works.
+    
+    </aside>
+    
+- **I - Interface Segregation Principle (ISP):** Many specific interfaces are better than a single general interface.
+    
+    *Before*
+    
+    ```tsx
+    // Una interfaz grande que los clientes pequeños no usan completamente.
+    interface CandidateOperations {
+        save();
+        validate();
+        sendEmail();
+        generateReport();
+    }
+    ```
+    
+    *After*
+    
+    ```tsx
+    interface SaveOperation {
+        save();
+    }
+    
+    interface EmailOperations {
+        sendEmail();
+    }
+    
+    interface ReportOperations {
+        generateReport();
+    }
+    
+    class Candidate implements SaveOperation, EmailOperations {
+        save() {
+            // implementación
+        }
+    
+        sendEmail() {
+            // implementación
+        }
+    }
+    ```
+    
+    <aside>
+    💡 **Explanation**: Interfaces are segregated into smaller operations, allowing classes to implement only the interfaces they need.
+    
+    **Observation:**
+    
+    The project does not currently use TypeScript interfaces extensively to enforce contracts for classes.
+    
+    **Recommendation:**
+    
+    Define more granular interfaces for service classes to ensure they only implement the methods they need.
+    
+    </aside>
+    
+    *Improvement Example:*
+    
+    Define an interface for candidate-related operations.
+    
+    ```tsx
+    interface ICandidateService {
+        addCandidate(candidateData: any): Promise<Candidate>;
+        findCandidateById(id: number): Promise<Candidate | null>;
+    }
+    ```
+    
+- **D - Dependency Inversion Principle (DIP):** High-level modules should not depend on low-level modules; both should depend on abstractions.
+    
+    *Before*
+    
+    ```tsx
+    // Dependencia directa de una implementación concreta.
+    class Candidate {
+               private database = new MySQLDatabase();
+        save() {
+            this.database.save(this);
+        }
+    }
+    ```
+    
+    *After*
+    
+    ```tsx
+    interface Database {
+        save(candidate: Candidate);
+    }
+    
+    class Candidate {
+        private database: Database;
+        constructor(database: Database) {
+            this.database = database;
+        }
+    
+        save() {
+            this.database.save(this);
+        }
+    }
+    ```
+    
+    <aside>
+    💡 **Explanation**: `Candidate` now depends on an abstraction (Database), not a concrete implementation, which makes code more flexible and testable.
+    
+    **Observation:**
+    
+    Classes like Candidate directly depend on the concrete PrismaClient for database operations.
+    
+    **Recommendation:**
+    
+    Use dependency injection to invert the dependency, relying on abstractions rather than concrete implementations.
+    
+    </aside>
+    
+    *Improvement Example:*
+    
+    Inject `PrismaClient` through the constructor or a setter method.
+    
+    ```tsx
+    constructor(data: any, private prismaClient: PrismaClient) {
+        // Initialization code
+    }
+    ```
+    
+
+**DRY (Don't Repeat Yourself)**
+
+The DRY principle focuses on reducing duplication in code. Each piece of knowledge should have a unique, unambiguous, and authoritative representation within a system.
+
+*Before*
+
+```tsx
+// Código repetido para validar emails en múltiples funciones.
+function saveCandidate(candidate) {
+    if (!candidate.email.includes('@')) {
+        throw new Error('Email inválido');
+    }
+    // guardar lógica
+}
+
+function updateCandidate(candidate) {
+    if (!candidate.email.includes('@')) {
+        throw new Error('Email inválido');
+    }
+    // actualizar lógica
+}
+```
+
+*After*
+
+```tsx
+export class Candidate {
+    validateEmail() {
+        if (!this.email.includes('@')) {
+            throw new Error('Email inválido');
+        }
+    }
+
+    save() {
+        this.validateEmail();
+        // guardar lógica
+    }
+
+    update() {
+        this.validateEmail();
+        // actualizar lógica
+    }
+}
+```
+
+<aside>
+💡 **Explanation**: Email validation is centralized in a single `validateEmail` method, eliminating code duplication in the save and update functions.
+
+**Observation:**
+
+The methods for saving entities like `Candidate`, `Education`, `WorkExperience`, and `Resume` contain repetitive logic for handling database operations.
+
+**Recommendation:**
+
+Abstract common database operation logic into a reusable function or class.
+
+</aside>
+
+Improvement Example:
+
+Create a generic database handler.
+
+```tsx
+class DatabaseHandler {
+    static async saveEntity(entity: any) {
+        // Generic save logic
+    }
+}
+```
+
+[**Design Patterns**](https://www.notion.so/Patrones-de-Dise-o-e006deb558f34f259a68b509f67566c7?pvs=21)
+
+[Prompt: Good Practices Manifesto](https://www.notion.so/Prompt-Manifesto-Buenas-Pr-cticas-ff4938d307174a4bbdcfc5fd2dbbbe6d?pvs=21)
+
+[Good Practices Contract](https://www.notion.so/Contrato-Buenas-Pr-cticas-dd592dd96989406eb226bb240e495f27?pvs=21)
+
+# ES
 # **Guía de Buenas Prácticas Proyecto LTI**
 
 ## **1. Domain-Driven Design (DDD)**
