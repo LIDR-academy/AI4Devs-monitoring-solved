@@ -1,6 +1,4 @@
-# EN
-
-# LTI - Talent Tracking System
+# LTI - Talent Tracking System  | EN
 
 This project is a full-stack application with a React frontend and an Express backend using Prisma as an ORM. The frontend is initiated with Create React App, and the backend is written in TypeScript.
 
@@ -163,9 +161,8 @@ POST http://localhost:3010/candidates
     }
 }
 ```
-# ES
 
-# LTI - Sistema de Seguimiento de Talento
+# LTI - Sistema de Seguimiento de Talento  | ES
 
 Este proyecto es una aplicación full-stack con un frontend en React y un backend en Express usando Prisma como un ORM. El frontend se inicia con Create React App y el backend está escrito en TypeScript.
 
