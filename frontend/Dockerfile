@@ -1,5 +1,5 @@
 # Usar una imagen base de Node.js
-FROM node:22
+FROM node:22.20.0-trixie-slim
 
 # Establecer el directorio de trabajo
 WORKDIR /usr/src/app
